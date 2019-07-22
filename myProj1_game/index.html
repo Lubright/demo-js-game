@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+    <!-- Bootstrap package begin -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
+    </script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
+    </script>
+    <!-- Bootstrap package end -->
+
+    <!-- Google font begin -->
+    <link href="https://fonts.googleapis.com/css?family=Poppins&display=swap" rel="stylesheet">
+    <!-- Google font end -->
+
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/media_query.css">
+
+</head>
+
+<body>
+    <div id="start_play" class="border-green">
+        <button id="start_btn">開始遊戲</button>&nbsp;
+        <button id="pause_btn" style="display: none;">暫停遊戲</button>&nbsp;
+        <button id="reset_btn">重新遊戲</button>&nbsp;
+        <p>所花時間: <span id="show_timer">0</span>秒</p>
+    </div>
+
+    <!-- <div id="box_num" class="border-blue"></div> -->
+
+    <script>
+        class Box {
+            constructor(id, className, width, height) {
+                this.id = id;
+                this.className = className;
+                this.width = (typeof width == "string") ? width : width.toString() + 'px';
+                this.height = (typeof height == "string") ? height : height.toString() + 'px';
+                this.$box = null; // jquery obj
+                this.$numItems = [];
+                this.time = 0;
+                this.timerId = null;
+                this.$show_timer = $('#show_timer');
+                this.current_counter = 1; // start 1
+                this.passCounter = 0;
+                console.log(this.$show_timer)
+
+            }
+
+            create() {
+                this.$box = $('<div />')
+                    .attr({
+                        id: this.id,
+                        'class': this.className
+                    })
+                    .css({
+                        'box-sizing': 'border-box',
+                        'width': this.width,
+                        'height': this.height,
+                        'margin': '0 auto',
+                        'margin-top': '20px'
+                    });
+                return this;
+            }
+
+            push_item(item) {
+
+                this.$numItems.push(item);
+
+                return this;
+            }
+
+            eventHandler() {
+                let that = this; // need rename this
+                this.$box.on('click', '.num', function (e) {
+                    // console.log(e.target);
+
+                    let user_num = e.target.textContent;
+                    let $this = $(this);
+
+                    console.log('user_num:', user_num);
+                    console.log('that.current_counter:', that.current_counter);
+
+                    if (user_num != that.current_counter) {
+                        // end the game
+
+                        that.showFailedImage();
+
+                    } else {
+                        that.passCounter++;
+
+                        console.log($this);
+                        $this.css({
+                            'background-color': 'grey'
+                        }).removeClass('unchecked');
+
+                    }
+
+                    if (that.passCounter == 9) {
+                        that.showPassImage();
+                    }
+
+                    that.current_counter++;
+
+                });
+
+                this.$box.on('mouseenter', '.unchecked', function (e) {
+                    // console.log(e.target);
+                    $(e.target).css({
+                        'background-color': '#7abcff'
+                    });
+                });
+
+                this.$box.on('mouseleave', '.unchecked', function (e) {
+                    // console.log(e.target);
+                    $(e.target).css({
+                        'background-color': '#60abf8'
+                    });
+                });
+            }
+
+            reset() {
+                this.$box.unbind(); // remove all envent
+                window.clearInterval(this.timerId);
+                this.time = 0;
+                this.$show_timer.text(this.time); // need bind this
+            }
+
+            unbind() {
+                this.$box.unbind(); // remove all envent
+            }
+
+            shuffle(arr) {
+                let temp;
+                for (let i = 0; i < arr.length; i++) {
+                    let j = Math.floor((Math.random() * arr.length));
+                    temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+
+            startTimer() {
+                this.timerId = setInterval(function () {
+                    this.time++;
+
+                    this.$show_timer.text(this.time); // need bind this
+                }.bind(this), 1000);
+            }
+
+            stopTimer() {
+                window.clearInterval(this.timerId);
+            }
+
+            render() {
+
+                this.shuffle(this.$numItems);
+
+                for (let i = 0; i < this.$numItems.length; i++) {
+                    this.$box.append(this.$numItems[i]);
+                }
+
+
+
+                return this;
+            }
+        }
+
+        Box.prototype.showFailedImage = function () {
+            let failedMessage = `<div class="alert alert-dismissible alert-warning">
+                <h4 class="alert-heading">失敗!</h4>
+                <p class="mb-0">請重新遊戲!</p>
+            </div>`;
+            let $failedMessage = $(failedMessage);
+
+            let that = this;
+
+            let $img = $('<img />')
+                .attr({
+                    src: './images/fail.png'
+                })
+                .css({
+                    'display': 'block',
+                    'width': that.$box.width() / 2,
+                    'height': that.$box.width() / 2,
+                    'margin-left': 'auto',
+                    'margin-right': 'auto',
+                });
+
+
+            this.$box.empty().append($failedMessage).append($img);
+
+            window.clearInterval(this.timerId);
+
+        };
+
+        Box.prototype.showPassImage = function () {
+            let passMessage = `<div class="alert alert-dismissible alert-secondary">
+                <strong>Well done!</strong>
+                 <p class="mb-0">You are pass. You are using ${this.time} seconds.</p>
+            </div>`;
+            let $passMessage = $(passMessage);
+
+            let that = this;
+
+            let $img = $('<img />')
+                .attr({
+                    src: 'images/success.png'
+                })
+                .css({
+                    'display': 'block',
+                    'width': that.$box.width() / 2,
+                    'height': that.$box.width() / 2,
+                    'margin-left': 'auto',
+                    'margin-right': 'auto',
+                });
+
+            this.$box.empty().append($passMessage).append($img);
+            window.clearInterval(this.timerId);
+
+            $('#start_play>#start_btn').text("開始遊戲");
+
+
+        };
+
+        class NumberBtn {
+            constructor(id, className, textContent, width, height) {
+                this.id = id;
+                this.className = className;
+                this.textContent = textContent;
+                this.width = (typeof width == "string") ? width : width.toString() + 'px';
+                this.height = (typeof height == "string") ? height : height.toString() + 'px';
+                this.$num = null; // jquery obj
+
+            }
+            create() {
+                this.$num = $('<div />')
+                    .attr({
+                        id: this.id,
+                        'class': this.className + ' unchecked'
+                    })
+                    .css({
+                        'box-sizing': 'border-box',
+                        'display': 'inline-block',
+                        'width': this.width,
+                        'height': this.height,
+                        'line-height': this.height,
+                        'font-size': '50px',
+                        'color': 'white',
+                        'text-align': 'center',
+                        'cursor': 'pointer',
+                    })
+                    .text(this.textContent);
+
+
+
+                return this;
+            }
+        }
+
+
+
+
+        $(function () {
+
+            let box;
+            let message = `<div class="alert alert-dismissible alert-danger">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <strong>抱歉!</strong> 請先開始遊戲.
+            </div>`;
+            let $message = $(message);
+
+            $('#start_play>#start_btn').on('click', function (e) {
+
+                if (box === undefined) {
+                    box = new Box('box_num', '', 540, 300).create();
+
+                    for (let i = 0; i < 9; i++) {
+                        let temp = new NumberBtn('num-' + i, 'num border-green', i + 1, 540 / 3, 300 /
+                                3)
+                            .create();
+                        box.push_item(temp.$num);
+                    }
+
+                    $('body').append(box.$box);
+
+                    box.render(); // render NumberBtn
+                    box.eventHandler(); // event handler
+                    box.startTimer(); // start timer counter
+
+                    // console.log(box.$numItems);
+
+                    this.textContent = '暫停遊戲';
+
+                } else {
+
+                    if (box.passCounter == 9) {
+                        box.reset(); // unbind all event and clear timerId
+                        box.$box.remove();
+
+                        box = undefined;
+                        $('#start_play>#start_btn').click(); // restart game
+                        return;
+                    }
+
+                    if (this.textContent == '暫停遊戲') {
+                        box.unbind();
+                        box.stopTimer();
+                        this.textContent = '開始遊戲';
+
+                    } else {
+                        box.eventHandler();
+                        box.startTimer();
+                        this.textContent = '暫停遊戲';
+
+                    }
+
+                }
+            });
+
+            $('#reset_btn').on('click', function (e) {
+                if (box === undefined) {
+                    $('body').append($message);
+                    $message.delay(1000).fadeOut('slow');
+                } else {
+                    box.reset(); // unbind all event and clear timerId
+                    box.$box.remove();
+
+                    box = undefined;
+                    $('#start_play>#start_btn').click(); // restart game
+                }
+            });
+
+        });
+    </script>
+</body>
+
+</html>
